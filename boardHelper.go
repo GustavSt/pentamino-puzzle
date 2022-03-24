@@ -1,6 +1,8 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func PrintBoard(board [6][10]string) {
 	var boardToPrint string
@@ -15,7 +17,9 @@ func PrintBoard(board [6][10]string) {
 
 func RemovePentamino(p [5]Vector2, board *[6][10]string, pos Vector2) {
 	for _, v := range p {
-		board[v.Y][v.X] = "."
+		x := pos.X + v.X
+		y := pos.Y + v.Y
+		board[y][x] = "."
 	}
 }
 func PlacePentamino(p [5]Vector2, board *[6][10]string, id string, pos Vector2) {
@@ -30,7 +34,7 @@ func CanPlacePentamino(board *[6][10]string, p [5]Vector2, pos Vector2) bool {
 	for _, pv := range p {
 		x := pos.X + pv.X
 		y := pos.Y + pv.Y
-		if x < 0 || y < 0 || x > 9 || y > x {
+		if x < 0 || y < 0 || x > 9 || y > 5 {
 			return false
 		}
 		if board[y][x] == "." {
@@ -50,6 +54,39 @@ func BoardToString(board [6][10]string) string {
 		}
 	}
 	return str
+}
+
+func RowToString(row [10]string) string {
+	str := ""
+	for _, s := range row {
+		str += s
+	}
+	return str
+}
+
+func StrToBoard(str string) [6][10]string {
+	x := 0
+	y := 0
+	board := [6][10]string{}
+	for i, c := range str {
+		if i%10 == 0 && i != 0 {
+			y++
+			x = 0
+		}
+		board[y][x] = string(c)
+		x++
+	}
+	return board
+}
+
+func PrintBoardString(board string) {
+	for i, c := range board {
+		if i%10 == 0 {
+			fmt.Println()
+		}
+		fmt.Printf("%v", c)
+	}
+	fmt.Println()
 }
 
 func ValidateBoard(board *[6][10]string) bool {
@@ -111,12 +148,12 @@ func GetAnchorBoards() ([][6][10]string, []Pentamino) {
 	boards := [][6][10]string{}
 	anchorPoints := []Vector2{
 		{1, 1},
-		{2, 1},
-		{3, 1},
-		{0, 2},
-		{1, 2},
-		{2, 2},
-		{3, 2},
+		// {2, 1},
+		// {3, 1},
+		// {0, 2},
+		// {1, 2},
+		// {2, 2},
+		// {3, 2},
 	}
 	xPentamino := pentaminoes[0]
 	for _, p := range anchorPoints {
@@ -142,7 +179,7 @@ func generatePentaminoes() []Pentamino {
 	xPermutations := [][5]Vector2{
 		{{0, 0}, {1, 0}, {2, 0}, {1, 1}, {1, -1}},
 	}
-	xPentamino := Pentamino{Id: "V", Permutations: xPermutations}
+	xPentamino := Pentamino{Id: "X", Permutations: xPermutations}
 
 	iPermutations := [][5]Vector2{
 		{{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}},
