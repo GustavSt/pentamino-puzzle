@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -30,7 +31,7 @@ func PlacePentamino(p [5]Vector2, board *[6][10]string, id string, pos Vector2) 
 	}
 }
 
-func CanPlacePentamino(board *[6][10]string, p [5]Vector2, pos Vector2) bool {
+func CanPlacePentamino(board [6][10]string, p [5]Vector2, pos Vector2) bool {
 	for _, pv := range p {
 		x := pos.X + pv.X
 		y := pos.Y + pv.Y
@@ -44,6 +45,26 @@ func CanPlacePentamino(board *[6][10]string, p [5]Vector2, pos Vector2) bool {
 		}
 	}
 	return true
+}
+
+func EMCanPlacePentamino(board []BoardCell, p [5]Vector2, pos Vector2) ([5]BoardCell, error) {
+	boardPos := SelectPos(board)
+	result := [5]BoardCell{}
+	for i, pv := range p {
+		bPos := Vector2{pos.X + pv.X, pos.Y + pv.Y}
+		if contains(boardPos, bPos) {
+
+			bc, err := FindPos(board, bPos)
+			if err != nil {
+				return result, err
+			}
+			result[i] = bc
+			continue
+		} else {
+			return result, errors.New("Pos not in board")
+		}
+	}
+	return result, nil
 }
 
 func BoardToString(board [6][10]string) string {
@@ -89,7 +110,7 @@ func PrintBoardString(board string) {
 	fmt.Println()
 }
 
-func ValidateBoard(board *[6][10]string) bool {
+func ValidateBoard(board [6][10]string) bool {
 
 	// PrintBoard(board)
 	checked := make([]Vector2, 0)
@@ -98,7 +119,7 @@ func ValidateBoard(board *[6][10]string) bool {
 			if contains(checked, Vector2{x, y}) {
 				continue
 			}
-			noEmptySpaces := getEmptySpaces(x, y, *board, &checked)
+			noEmptySpaces := getEmptySpaces(x, y, board, &checked)
 			if len(noEmptySpaces)%5 == 0 {
 				continue
 			}
@@ -144,7 +165,7 @@ func contains(s []Vector2, v Vector2) bool {
 }
 
 func GetAnchorBoards() ([][6][10]string, []Pentamino) {
-	pentaminoes := generatePentaminoes()
+	pentaminoes := GeneratePentaminoes()
 	boards := [][6][10]string{}
 	anchorPoints := []Vector2{
 		{1, 1},
@@ -175,7 +196,7 @@ func getBoard() [6][10]string {
 	}
 }
 
-func generatePentaminoes() []Pentamino {
+func GeneratePentaminoes() []Pentamino {
 	xPermutations := [][5]Vector2{
 		{{0, 0}, {1, 0}, {2, 0}, {1, 1}, {1, -1}},
 	}
