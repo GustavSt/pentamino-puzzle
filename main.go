@@ -2,27 +2,27 @@ package main
 
 import (
 	"fmt"
-	"strings"
+	"math"
+	"sort"
 	"sync"
-	"time"
 )
 
 func main() {
 	fmt.Println("Pentomino puzzle 6x10")
-	_, pentaminoes := GetAnchorBoards()
-	c := make(chan string)
+	c := make(chan []int)
 	wg := new(sync.WaitGroup)
-
-	for _, p2 := range pentaminoes {
-		fmt.Printf("%v ", p2.Id)
-	}
 	fmt.Println()
+	pentaminos := GeneratePentaminoes()
+	board := GetBoard6x10()
+	emMatrix := ProduceExactMatchMatrix(pentaminos, board)
 
-	ps := GeneratePentaminoes()
-	for _, p := range ps {
+	fmt.Printf("Em length: %v \n", len(emMatrix.Matrix))
 
-	}
-
+	wg.Add(1)
+	go func(matrix EMMatrix) {
+		defer wg.Done()
+		emStart(matrix, []int{}, c)
+	}(emMatrix)
 	// for i, b := range boards {
 	// 	// PrintBoard(b)
 	// 	wg.Add(1)
@@ -38,91 +38,68 @@ func main() {
 		close(c)
 	}()
 	fmt.Println("Started looking for solutions")
-	result := make([]string, 0)
 	failed := 0
 	success := 0
-	fmt.Printf("SolutionsFound: %v. Failed attempts: %v.", success, failed)
+	duplicate := 0
+	result := [][]int{}
+	fmt.Printf("SolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
 
-	// writer1 := uilive.New()
-	// writer2 := writer1.Newline()
-	// writer3 := writer1.Newline()
-	// writer4 := writer1.Newline()
-	// writer5 := writer1.Newline()
-	// writer6 := writer1.Newline()
-	// writer1.Start()
-
-	for r := range c {
-		if r[0] == 'b' {
-			board := StrToBoard(r[1:])
-			fmt.Println()
-			for _, row := range board {
-				fmt.Printf("%v\n", RowToString(row))
-				// if y == 0 {
-				// 	fmt.Fprintf(writer1, "%v\n", RowToString(row))
-				// }
-				// if y == 1 {
-				// 	fmt.Fprintf(writer2, "%v\n", RowToString(row))
-				// }
-				// if y == 2 {
-				// 	fmt.Fprintf(writer3, "%v\n", RowToString(row))
-				// }
-				// if y == 3 {
-				// 	fmt.Fprintf(writer4, "%v\n", RowToString(row))
-				// }
-				// if y == 4 {
-				// 	fmt.Fprintf(writer5, "%v\n", RowToString(row))
-				// }
-				// if y == 5 {
-				// 	fmt.Fprintf(writer6, "%v\n", RowToString(row))
-				// }
-			}
-			continue
-		}
-		if r == "failed" {
+	for rows := range c {
+		if len(rows) == 0 {
 			failed++
-			// fmt.Println()
-			fmt.Printf("\rSolutionsFound: %v. Failed attempts: %v.", success, failed)
+			fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
 			continue
 		}
-		fmt.Printf("%v \n", r)
-		result = append(result, r)
-		success++
-		fmt.Printf("\rSolutionsFound: %v. Failed attempts: %v.", success, failed)
+		sort.Ints(rows)
+		isDuplicate := false
+		for _, found := range result {
+			if compareResultArr(found, rows) {
+				//duplicate
+				isDuplicate = true
+				break
+			}
+		}
+		if isDuplicate {
+			duplicate++
+		} else {
+			result = append(result, rows)
+			success++
+		}
+		fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
 	}
-	// fmt.Fprintln(writer1, "Finished downloading both files :)")
-	// writer1.Stop()
+	// for r := range c {
+	// 	if r == "failed" {
+	// 		failed++
+	// 		fmt.Printf("\rSolutionsFound: %v. Failed attempts: %v.", success, failed)
+	// 		continue
+	// 	}
+	// 	result = append(result, r)
+	// 	success++
+	// 	fmt.Printf("\rSolutionsFound: %v. Failed attempts: %v.", success, failed)
+	// }
+
 	fmt.Println()
-	fmt.Printf("No solutions found: %v\n", success)
+	fmt.Printf("Number of solutions found: %v\n", success)
 }
 
-func start(pentaminoesLeft []Pentamino, board *[6][10]string, c chan<- string, boardId int, attempted map[string]int) {
-	// if boardId == 0 {
-	// 	for _, p2 := range pentaminoesLeft {
-	// 		fmt.Printf("%v ", p2.Id)
-	// 	}
-	// 	fmt.Println()
-	// }
-	str := BoardToString(*board)
-	_, v := attempted[str]
-	if v {
-		return
-	} else {
-		attempted[str] = 1
+func compareResultArr(first, second []int) bool {
+	if len(first) != len(second) {
+		return false
 	}
-	if !strings.Contains(str, ".") {
-		c <- str
-		return
+	for i, val := range first {
+		if val != second[i] {
+			return false
+		}
 	}
+	return true
+}
+
+func start(pentaminoesLeft []Pentamino, board *[6][10]string, c chan<- string) {
 	if len(pentaminoesLeft) == 0 {
 		// Board is filled send message on channel
 		str2 := BoardToString(*board)
 		c <- str2
 		return
-	}
-	if len(pentaminoesLeft) == 1 {
-		c <- fmt.Sprintf("b%v", BoardToString(*board))
-		c <- pentaminoesLeft[0].Id
-		time.Sleep(time.Second / 2)
 	}
 	for i, p := range pentaminoesLeft {
 		for y, row := range board {
@@ -131,23 +108,11 @@ func start(pentaminoesLeft []Pentamino, board *[6][10]string, c chan<- string, b
 					pos := Vector2{x, y}
 					if CanPlacePentamino(*board, pv, pos) {
 						PlacePentamino(pv, board, p.Id, pos)
-						// if boardId == 0 {
-						// 	c <- fmt.Sprintf("b%v", BoardToString(*board))
-						// 	// pids := ""
-						// 	// for _, pid := range pentaminoesLeft {
-						// 	// 	pids += fmt.Sprintf("%v ", pid.Id)
-						// 	// }
-						// 	// c <- pids
-						// 	time.Sleep(time.Second)
-						// }
-
 						if ValidateBoard(*board) {
 							pl1 := make([]Pentamino, len(pentaminoesLeft))
 							copy(pl1, pentaminoesLeft)
 							pl := append(pl1[:i], pl1[i+1:]...)
-							// pl1[i] = pl1[len(pl1)-1]
-							// pl := pl1[:len(pl1)-1]
-							start(pl, board, c, boardId, attempted)
+							start(pl, board, c)
 						}
 						RemovePentamino(pv, board, pos)
 					}
@@ -159,4 +124,81 @@ func start(pentaminoesLeft []Pentamino, board *[6][10]string, c chan<- string, b
 }
 func remove(p []Pentamino, i int) []Pentamino {
 	return append(p[:i], p[i+1:]...)
+}
+
+func emStart(emMatrix EMMatrix, chosenRows []int, c chan<- []int) {
+	if len(emMatrix.Matrix) == 0 {
+		// failed
+		c <- make([]int, 0, 0)
+		return
+	}
+	if len(emMatrix.Matrix) == 1 {
+		for rowI, row := range emMatrix.Matrix {
+			for _, c := range row {
+				if c == false {
+					return
+				}
+			}
+			successRows := []int{}
+			copy(successRows, chosenRows)
+			successRows = append(successRows, rowI)
+			c <- successRows
+			// success
+			return
+		}
+	}
+	lowestCount := math.MaxInt
+	var lowestCol int
+	for key, count := range emMatrix.ColCount {
+		if count < lowestCount {
+			lowestCount = count
+			lowestCol = key
+		}
+	}
+	for rowI, row := range emMatrix.Matrix {
+		if val, exist := row[lowestCol]; exist && val {
+			newMatrix := createNewMatrix(emMatrix, row)
+			newChosenRows := []int{}
+			newChosenRows = append(newChosenRows, chosenRows...)
+			newChosenRows = append(newChosenRows, rowI)
+			emStart(newMatrix, newChosenRows, c)
+		}
+	}
+}
+
+func createNewMatrix(matrix EMMatrix, row map[int]bool) EMMatrix {
+	colIxToRemove := []int{}
+	newMatrix := CopyMatrix(matrix)
+
+	for colI, col := range row {
+		if col {
+			colIxToRemove = append(colIxToRemove, colI)
+		}
+	}
+	for rowII, rowInner := range matrix.Matrix {
+		shouldRemoveRow := false
+		for _, colIx := range colIxToRemove {
+			if val, hasVal := rowInner[colIx]; hasVal && val {
+				shouldRemoveRow = true
+				break
+			}
+		}
+		if shouldRemoveRow {
+			for colIx, val := range rowInner {
+				if val {
+					newMatrix.ColCount[colIx] -= 1
+					if newMatrix.ColCount[colIx] == 0 {
+						delete(newMatrix.ColCount, colIx)
+					}
+				}
+			}
+			delete(newMatrix.Matrix, rowII)
+		}
+	}
+	// for _, row := range newMatrix.Matrix {
+	// 	for colIx := range colIxToRemove {
+	// 		delete(row, colIx)
+	// 	}
+	// }
+	return newMatrix
 }

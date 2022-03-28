@@ -2,8 +2,12 @@ package main
 
 import "errors"
 
-func ProduceExactMatchMatrix(pentaminos []Pentamino, board []BoardCell) [][72]bool {
-	emMatrix := [][72]bool{}
+func ProduceExactMatchMatrix(pentaminos []Pentamino, board []BoardCell) EMMatrix {
+	emMatrix := EMMatrix{
+		make(map[int]int),
+		make(map[int]map[int]bool),
+	}
+	rowIndex := 0
 	for pIdx, p := range pentaminos {
 		for _, pp := range p.Permutations {
 			for _, bc := range board {
@@ -11,28 +15,38 @@ func ProduceExactMatchMatrix(pentaminos []Pentamino, board []BoardCell) [][72]bo
 				if err != nil {
 					continue
 				}
-				row := [72]bool{}
-				for i := range row {
+				row := make(map[int]bool)
+				for i := 0; i < 72; i++ {
 					if i < 12 {
-						row[i] = i == pIdx
+						if i == pIdx {
+							row[i] = true
+							_, ok := emMatrix.ColCount[i]
+							if ok {
+								emMatrix.ColCount[i] += 1
+							} else {
+								emMatrix.ColCount[i] = 1
+							}
+						}
 						continue
 					}
 					for _, bcP := range bcs {
-						if bcP.Index == i+12 {
+						if bcP.Index+12 == i {
 							row[i] = true
+							_, ok := emMatrix.ColCount[i]
+							if ok {
+								emMatrix.ColCount[i] += 1
+							} else {
+								emMatrix.ColCount[i] = 1
+							}
 						}
 					}
 				}
-				emMatrix = append(emMatrix, row)
+				emMatrix.Matrix[rowIndex] = row
+				rowIndex++
 			}
 		}
 	}
 	return emMatrix
-}
-
-type BoardCell struct {
-	Pos   Vector2
-	Index int
 }
 
 func SelectPos(board []BoardCell) []Vector2 {
@@ -50,4 +64,31 @@ func FindPos(board []BoardCell, pos Vector2) (BoardCell, error) {
 		}
 	}
 	return BoardCell{}, errors.New("Pos not found")
+}
+
+func CopyMatrix(matrix EMMatrix) EMMatrix {
+	newMatrix := EMMatrix{
+		make(map[int]int),
+		make(map[int]map[int]bool),
+	}
+	for key, val := range matrix.ColCount {
+		newMatrix.ColCount[key] = val
+	}
+	for rowI, row := range matrix.Matrix {
+		newMatrix.Matrix[rowI] = make(map[int]bool)
+		for colI, col := range row {
+			newMatrix.Matrix[rowI][colI] = col
+		}
+	}
+	return newMatrix
+}
+
+type EMCell struct {
+	IX   int
+	Flag bool
+}
+
+type EMMatrix struct {
+	ColCount map[int]int
+	Matrix   map[int]map[int]bool
 }

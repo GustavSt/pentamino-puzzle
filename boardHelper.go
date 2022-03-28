@@ -5,6 +5,11 @@ import (
 	"fmt"
 )
 
+type BoardCell struct {
+	Pos   Vector2
+	Index int
+}
+
 func PrintBoard(board [6][10]string) {
 	var boardToPrint string
 	for _, row := range board {
@@ -178,14 +183,25 @@ func GetAnchorBoards() ([][6][10]string, []Pentamino) {
 	}
 	xPentamino := pentaminoes[0]
 	for _, p := range anchorPoints {
-		board := getBoard()
+		board := GetBoard()
 		PlacePentamino(xPentamino.Permutations[0], &board, xPentamino.Id, p)
 		boards = append(boards, board)
 	}
 	return boards, pentaminoes[1:]
 }
 
-func getBoard() [6][10]string {
+func GetBoard6x10() []BoardCell {
+	board := make([]BoardCell, 60)
+	for i, y := 0, 0; y < 6; y++ {
+		for x := 0; x < 10; x++ {
+			board[i] = BoardCell{Vector2{x, y}, i}
+			i++
+		}
+	}
+	return board
+}
+
+func GetBoard() [6][10]string {
 	return [6][10]string{
 		{".", ".", ".", ".", ".", ".", ".", ".", ".", "."},
 		{".", ".", ".", ".", ".", ".", ".", ".", ".", "."},
@@ -219,9 +235,9 @@ func GeneratePentaminoes() []Pentamino {
 	vPermutations := [][5]Vector2{
 		{{0, 0}, {1, 0}, {2, 0}, {2, 1}, {2, 2}},
 		// Following rotations are not needed
-		// {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {2, 0}},
-		// {{0, 0}, {1, 0}, {2, -2}, {2, -1}, {2, 0}},
-		// {{0, 0}, {0, 1}, {0, 2}, {1, 2}, {2, 2}},
+		{{0, 0}, {0, 1}, {0, 2}, {1, 0}, {2, 0}},
+		{{0, 0}, {1, 0}, {2, -2}, {2, -1}, {2, 0}},
+		{{0, 0}, {0, 1}, {0, 2}, {1, 2}, {2, 2}},
 	}
 	vPentamino := Pentamino{Id: "V", Permutations: vPermutations}
 
