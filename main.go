@@ -15,13 +15,13 @@ func main() {
 	pentaminos := GeneratePentaminoes()
 	RemoveVRotations(pentaminos)
 	board := GetBoard6x10()
-	emMatrix := ProduceExactMatchMatrix(pentaminos, board)
-	matrices := MatricesWithXAnchorPoints(emMatrix, pentaminos[0].Permutations[0])
+	ecMatrix := ProduceExactCoverMatrix(pentaminos, board)
+	matrices := MatricesWithXAnchorPoints(ecMatrix, pentaminos[0].Permutations[0])
 	fmt.Printf("Em length: %v \n", len(matrices[0].Matrix))
 
 	for _, m := range matrices {
 		wg.Add(1)
-		go func(matrix EMMatrix) {
+		go func(matrix ECMatrix) {
 			defer wg.Done()
 			emStart(matrix, []int{}, c)
 		}(m)
@@ -133,7 +133,7 @@ func remove(p []Pentamino, i int) []Pentamino {
 	return append(p[:i], p[i+1:]...)
 }
 
-func emStart(emMatrix EMMatrix, chosenRows []int, c chan<- []int) {
+func emStart(emMatrix ECMatrix, chosenRows []int, c chan<- []int) {
 	if len(emMatrix.Matrix) == 0 {
 		// failed
 		c <- make([]int, 0, 0)
@@ -174,7 +174,7 @@ func emStart(emMatrix EMMatrix, chosenRows []int, c chan<- []int) {
 	}
 }
 
-func createNewMatrix(matrix EMMatrix, row map[int]bool) EMMatrix {
+func createNewMatrix(matrix ECMatrix, row map[int]bool) ECMatrix {
 	colIxToRemove := []int{}
 	newMatrix := CopyMatrix(matrix)
 

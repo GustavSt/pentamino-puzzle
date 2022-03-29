@@ -2,8 +2,8 @@ package main
 
 import "errors"
 
-func ProduceExactMatchMatrix(pentaminos []Pentamino, board []BoardCell) EMMatrix {
-	emMatrix := EMMatrix{
+func ProduceExactCoverMatrix(pentaminos []Pentamino, board []BoardCell) ECMatrix {
+	emMatrix := ECMatrix{
 		make(map[int]int),
 		make(map[int]map[int]bool),
 	}
@@ -12,7 +12,7 @@ func ProduceExactMatchMatrix(pentaminos []Pentamino, board []BoardCell) EMMatrix
 	for pIdx, p := range pentaminos {
 		for _, pp := range p.Permutations {
 			for _, bc := range board {
-				bcs, err := EMCanPlacePentamino(board, pp, bc.Pos)
+				bcs, err := ECCanPlacePentamino(board, pp, bc.Pos)
 				if err != nil {
 					continue
 				}
@@ -52,9 +52,9 @@ func ProduceExactMatchMatrix(pentaminos []Pentamino, board []BoardCell) EMMatrix
 	return emMatrix
 }
 
-func MatricesWithXAnchorPoints(matrix EMMatrix, p [5]Vector2) []EMMatrix {
+func MatricesWithXAnchorPoints(matrix ECMatrix, p [5]Vector2) []ECMatrix {
 	anchorPoints := GetXAncorPoints()
-	result := []EMMatrix{}
+	result := []ECMatrix{}
 	for _, ap := range anchorPoints {
 		newMatrix := CopyMatrix(matrix)
 		for rowI, row := range matrix.Matrix {
@@ -123,8 +123,8 @@ func FindPos(board []BoardCell, pos Vector2) (BoardCell, error) {
 	return BoardCell{}, errors.New("Pos not found")
 }
 
-func CopyMatrix(matrix EMMatrix) EMMatrix {
-	newMatrix := EMMatrix{
+func CopyMatrix(matrix ECMatrix) ECMatrix {
+	newMatrix := ECMatrix{
 		make(map[int]int),
 		make(map[int]map[int]bool),
 	}
@@ -140,13 +140,13 @@ func CopyMatrix(matrix EMMatrix) EMMatrix {
 	return newMatrix
 }
 
-func EMValidateBoard(board []BoardCell, p [5]BoardCell) bool {
+func ECValidateBoard(board []BoardCell, p [5]BoardCell) bool {
 	checked := make([]Vector2, 0)
 	for _, cell := range board {
 		if contains(checked, cell.Pos) {
 			continue
 		}
-		nrOfEmptySpaces := emNrEmptySpaces(cell, board, p, &checked)
+		nrOfEmptySpaces := ecNrEmptySpaces(cell, board, p, &checked)
 		if len(nrOfEmptySpaces)%5 == 0 {
 			continue
 		}
@@ -155,7 +155,7 @@ func EMValidateBoard(board []BoardCell, p [5]BoardCell) bool {
 
 	return true
 }
-func emNrEmptySpaces(cell BoardCell, board []BoardCell, p [5]BoardCell, checked *[]Vector2) []BoardCell {
+func ecNrEmptySpaces(cell BoardCell, board []BoardCell, p [5]BoardCell, checked *[]Vector2) []BoardCell {
 	if contains(*checked, cell.Pos) {
 		return make([]BoardCell, 0)
 	}
@@ -170,24 +170,24 @@ func emNrEmptySpaces(cell BoardCell, board []BoardCell, p [5]BoardCell, checked 
 	x := cell.Index % 10
 	if x+1 < 10 {
 		newCell := BoardCell{Pos: Vector2{x + 1, y}, Index: cell.Index + 1}
-		currSpaces = append(currSpaces, emNrEmptySpaces(newCell, board, p, checked)...)
+		currSpaces = append(currSpaces, ecNrEmptySpaces(newCell, board, p, checked)...)
 	}
 	if y+1 < 6 {
 		newCell := BoardCell{Pos: Vector2{x, y + 1}, Index: cell.Index + 10}
-		currSpaces = append(currSpaces, emNrEmptySpaces(newCell, board, p, checked)...)
+		currSpaces = append(currSpaces, ecNrEmptySpaces(newCell, board, p, checked)...)
 	}
 	if x-1 > -1 {
 		newCell := BoardCell{Pos: Vector2{x - 1, y}, Index: cell.Index - 1}
-		currSpaces = append(currSpaces, emNrEmptySpaces(newCell, board, p, checked)...)
+		currSpaces = append(currSpaces, ecNrEmptySpaces(newCell, board, p, checked)...)
 	}
 	if y-1 > -1 {
 		newCell := BoardCell{Pos: Vector2{x, y - 1}, Index: cell.Index - 10}
-		currSpaces = append(currSpaces, emNrEmptySpaces(newCell, board, p, checked)...)
+		currSpaces = append(currSpaces, ecNrEmptySpaces(newCell, board, p, checked)...)
 	}
 	return currSpaces
 }
 
-func EMCanPlacePentamino(board []BoardCell, p [5]Vector2, pos Vector2) ([5]BoardCell, error) {
+func ECCanPlacePentamino(board []BoardCell, p [5]Vector2, pos Vector2) ([5]BoardCell, error) {
 	boardPos := SelectPos(board)
 	result := [5]BoardCell{}
 	for i, pv := range p {
@@ -204,14 +204,14 @@ func EMCanPlacePentamino(board []BoardCell, p [5]Vector2, pos Vector2) ([5]Board
 			return result, errors.New("Pos not in board")
 		}
 	}
-	if !EMValidateBoard(board, result) {
+	if !ECValidateBoard(board, result) {
 		return result, errors.New("Invalid Pos in board")
 	}
 
 	return result, nil
 }
 
-type EMMatrix struct {
+type ECMatrix struct {
 	ColCount map[int]int
 	Matrix   map[int]map[int]bool
 }
