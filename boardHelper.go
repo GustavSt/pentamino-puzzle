@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -52,26 +51,6 @@ func CanPlacePentamino(board [6][10]string, p [5]Vector2, pos Vector2) bool {
 	return true
 }
 
-func EMCanPlacePentamino(board []BoardCell, p [5]Vector2, pos Vector2) ([5]BoardCell, error) {
-	boardPos := SelectPos(board)
-	result := [5]BoardCell{}
-	for i, pv := range p {
-		bPos := Vector2{pos.X + pv.X, pos.Y + pv.Y}
-		if contains(boardPos, bPos) {
-
-			bc, err := FindPos(board, bPos)
-			if err != nil {
-				return result, err
-			}
-			result[i] = bc
-			continue
-		} else {
-			return result, errors.New("Pos not in board")
-		}
-	}
-	return result, nil
-}
-
 func BoardToString(board [6][10]string) string {
 	str := ""
 	for _, row := range board {
@@ -116,7 +95,6 @@ func PrintBoardString(board string) {
 }
 
 func ValidateBoard(board [6][10]string) bool {
-
 	// PrintBoard(board)
 	checked := make([]Vector2, 0)
 	for y, row := range board {
@@ -169,17 +147,29 @@ func contains(s []Vector2, v Vector2) bool {
 	return false
 }
 
+func GetXAncorPoints() []Vector2 {
+	return []Vector2{
+		{1, 1},
+		{2, 1},
+		{3, 1},
+		{0, 2},
+		{1, 2},
+		{2, 2},
+		{3, 2},
+	}
+}
+
 func GetAnchorBoards() ([][6][10]string, []Pentamino) {
 	pentaminoes := GeneratePentaminoes()
 	boards := [][6][10]string{}
 	anchorPoints := []Vector2{
 		{1, 1},
-		// {2, 1},
-		// {3, 1},
-		// {0, 2},
-		// {1, 2},
-		// {2, 2},
-		// {3, 2},
+		{2, 1},
+		{3, 1},
+		{0, 2},
+		{1, 2},
+		{2, 2},
+		{3, 2},
 	}
 	xPentamino := pentaminoes[0]
 	for _, p := range anchorPoints {
@@ -331,4 +321,23 @@ func GeneratePentaminoes() []Pentamino {
 	pPentamino := Pentamino{Id: "P", Permutations: pPermutations}
 
 	return []Pentamino{xPentamino, iPentamino, zPentamino, vPentamino, tPentamino, wPentamino, uPentamino, lPentamino, nPentamino, yPentamino, fPentamino, pPentamino}
+}
+
+func RemoveVRotations(pentaminos []Pentamino) {
+	var index int
+	for i, p := range pentaminos {
+		if p.Id == "V" {
+			index = i
+			break
+		}
+	}
+	vPermutations := [][5]Vector2{
+		{{0, 0}, {1, 0}, {2, 0}, {2, 1}, {2, 2}},
+		// Following rotations are not needed
+		// {{0, 0}, {0, 1}, {0, 2}, {1, 0}, {2, 0}},
+		// {{0, 0}, {1, 0}, {2, -2}, {2, -1}, {2, 0}},
+		// {{0, 0}, {0, 1}, {0, 2}, {1, 2}, {2, 2}},
+	}
+	vPentamino := Pentamino{Id: "V", Permutations: vPermutations}
+	pentaminos[index] = vPentamino
 }

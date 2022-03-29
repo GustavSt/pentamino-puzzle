@@ -13,16 +13,23 @@ func main() {
 	wg := new(sync.WaitGroup)
 	fmt.Println()
 	pentaminos := GeneratePentaminoes()
+	RemoveVRotations(pentaminos)
 	board := GetBoard6x10()
 	emMatrix := ProduceExactMatchMatrix(pentaminos, board)
+	matrices := MatricesWithXAnchorPoints(emMatrix, pentaminos[0].Permutations[0])
+	fmt.Printf("Em length: %v \n", len(matrices[0].Matrix))
 
-	fmt.Printf("Em length: %v \n", len(emMatrix.Matrix))
-
-	wg.Add(1)
-	go func(matrix EMMatrix) {
-		defer wg.Done()
-		emStart(matrix, []int{}, c)
-	}(emMatrix)
+	for _, m := range matrices {
+		wg.Add(1)
+		go func(matrix EMMatrix) {
+			defer wg.Done()
+			emStart(matrix, []int{}, c)
+		}(m)
+	}
+	// go func(matrix EMMatrix) {
+	// 	defer wg.Done()
+	// 	emStart(matrix, []int{}, c)
+	// }(emMatrix)
 	// for i, b := range boards {
 	// 	// PrintBoard(b)
 	// 	wg.Add(1)
@@ -162,6 +169,7 @@ func emStart(emMatrix EMMatrix, chosenRows []int, c chan<- []int) {
 			newChosenRows = append(newChosenRows, chosenRows...)
 			newChosenRows = append(newChosenRows, rowI)
 			emStart(newMatrix, newChosenRows, c)
+
 		}
 	}
 }
@@ -175,7 +183,7 @@ func createNewMatrix(matrix EMMatrix, row map[int]bool) EMMatrix {
 			colIxToRemove = append(colIxToRemove, colI)
 		}
 	}
-	for rowII, rowInner := range matrix.Matrix {
+	for rowI, rowInner := range matrix.Matrix {
 		shouldRemoveRow := false
 		for _, colIx := range colIxToRemove {
 			if val, hasVal := rowInner[colIx]; hasVal && val {
@@ -192,13 +200,13 @@ func createNewMatrix(matrix EMMatrix, row map[int]bool) EMMatrix {
 					}
 				}
 			}
-			delete(newMatrix.Matrix, rowII)
+			delete(newMatrix.Matrix, rowI)
 		}
 	}
-	// for _, row := range newMatrix.Matrix {
-	// 	for colIx := range colIxToRemove {
-	// 		delete(row, colIx)
-	// 	}
-	// }
+	for _, r := range newMatrix.Matrix {
+		for _, colIx := range colIxToRemove {
+			delete(r, colIx)
+		}
+	}
 	return newMatrix
 }
