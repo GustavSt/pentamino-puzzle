@@ -9,9 +9,8 @@ import (
 
 func main() {
 	fmt.Println("Pentomino puzzle 6x10")
-	c := make(chan []int)
+	c := make(chan ECMessage)
 	wg := new(sync.WaitGroup)
-	fmt.Println()
 	pentaminos := GeneratePentaminoes()
 	RemoveVRotations(pentaminos)
 	board := GetBoard6x10()
@@ -19,27 +18,20 @@ func main() {
 	matrices := MatricesWithXAnchorPoints(ecMatrix, pentaminos[0].Permutations[0])
 	fmt.Printf("Em length: %v \n", len(matrices[0].Matrix))
 
-	for _, m := range matrices {
+	failedCount := [7]int{}
+	successCount := [7]int{}
+	duplicateCount := [7]int{}
+
+	for i, m := range matrices {
 		wg.Add(1)
-		go func(matrix ECMatrix) {
+		failedCount[i] = 0
+		successCount[i] = 0
+		duplicateCount[i] = 0
+		go func(goroutineId int, matrix ECMatrix) {
 			defer wg.Done()
-			emStart(matrix, []int{}, c)
-		}(m)
+			ecStart(matrix, []int{}, c, goroutineId)
+		}(i, m)
 	}
-	// go func(matrix EMMatrix) {
-	// 	defer wg.Done()
-	// 	emStart(matrix, []int{}, c)
-	// }(emMatrix)
-	// for i, b := range boards {
-	// 	// PrintBoard(b)
-	// 	wg.Add(1)
-	// 	go func(board [6][10]string, boardId int) {
-	// 		defer wg.Done()
-	// 		attempts := make(map[string]int)
-	// 		start(pentaminoes, &board, c, boardId, attempts)
-	// 	}(b, i)
-	// 	// fmt.Println("-----------")
-	// }
 	go func() {
 		wg.Wait()
 		close(c)
@@ -51,16 +43,30 @@ func main() {
 	result := [][]int{}
 	fmt.Printf("SolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
 
-	for rows := range c {
-		if len(rows) == 0 {
+	for message := range c {
+		if len(message.Rows) == 0 {
 			failed++
-			fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
+			failedCount[message.Id] += 1
+			str := fmt.Sprintf("S: ")
+			for _, val := range successCount {
+				str += fmt.Sprintf("c: %v|", val)
+			}
+			str += fmt.Sprintf("D: ")
+			for _, val := range duplicateCount {
+				str += fmt.Sprintf("c: %v|", val)
+			}
+			str += fmt.Sprintf("F: ")
+			for _, val := range failedCount {
+				str += fmt.Sprintf("c: %v|", val)
+			}
+			fmt.Printf("\r %v", str)
+			// fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
 			continue
 		}
-		sort.Ints(rows)
+		sort.Ints(message.Rows)
 		isDuplicate := false
 		for _, found := range result {
-			if compareResultArr(found, rows) {
+			if compareResultArr(found, message.Rows) {
 				//duplicate
 				isDuplicate = true
 				break
@@ -68,23 +74,27 @@ func main() {
 		}
 		if isDuplicate {
 			duplicate++
+			duplicateCount[message.Id] += 1
 		} else {
-			result = append(result, rows)
+			result = append(result, message.Rows)
+			successCount[message.Id] += 1
 			success++
 		}
-		fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
+		str := fmt.Sprintf("S: ")
+		for _, val := range successCount {
+			str += fmt.Sprintf("c: %v|", val)
+		}
+		str += fmt.Sprintf("D: ")
+		for _, val := range duplicateCount {
+			str += fmt.Sprintf("c: %v|", val)
+		}
+		str += fmt.Sprintf("F: ")
+		for _, val := range failedCount {
+			str += fmt.Sprintf("c: %v|", val)
+		}
+		fmt.Printf("\r %v", str)
+		// fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
 	}
-	// for r := range c {
-	// 	if r == "failed" {
-	// 		failed++
-	// 		fmt.Printf("\rSolutionsFound: %v. Failed attempts: %v.", success, failed)
-	// 		continue
-	// 	}
-	// 	result = append(result, r)
-	// 	success++
-	// 	fmt.Printf("\rSolutionsFound: %v. Failed attempts: %v.", success, failed)
-	// }
-
 	fmt.Println()
 	fmt.Printf("Number of solutions found: %v\n", success)
 }
@@ -101,6 +111,7 @@ func compareResultArr(first, second []int) bool {
 	return true
 }
 
+// Recursive function testing every pentamino on every cell
 func start(pentaminoesLeft []Pentamino, board *[6][10]string, c chan<- string) {
 	if len(pentaminoesLeft) == 0 {
 		// Board is filled send message on channel
@@ -129,27 +140,31 @@ func start(pentaminoesLeft []Pentamino, board *[6][10]string, c chan<- string) {
 	}
 	c <- "failed"
 }
-func remove(p []Pentamino, i int) []Pentamino {
-	return append(p[:i], p[i+1:]...)
+
+type ECMessage struct {
+	Id   int
+	Rows []int
 }
 
-func emStart(emMatrix ECMatrix, chosenRows []int, c chan<- []int) {
+// recursive function using exact cover algorithm, supposedly.
+func ecStart(emMatrix ECMatrix, chosenRows []int, c chan<- ECMessage, goRoutineId int) {
 	if len(emMatrix.Matrix) == 0 {
 		// failed
-		c <- make([]int, 0, 0)
+		c <- ECMessage{goRoutineId, make([]int, 0, 0)}
 		return
 	}
 	if len(emMatrix.Matrix) == 1 {
 		for rowI, row := range emMatrix.Matrix {
 			for _, c := range row {
 				if c == false {
+					// failed
 					return
 				}
 			}
 			successRows := []int{}
 			copy(successRows, chosenRows)
 			successRows = append(successRows, rowI)
-			c <- successRows
+			c <- ECMessage{goRoutineId, successRows}
 			// success
 			return
 		}
@@ -168,8 +183,7 @@ func emStart(emMatrix ECMatrix, chosenRows []int, c chan<- []int) {
 			newChosenRows := []int{}
 			newChosenRows = append(newChosenRows, chosenRows...)
 			newChosenRows = append(newChosenRows, rowI)
-			emStart(newMatrix, newChosenRows, c)
-
+			ecStart(newMatrix, newChosenRows, c, goRoutineId)
 		}
 	}
 }

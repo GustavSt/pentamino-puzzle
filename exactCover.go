@@ -96,9 +96,8 @@ func getMatrixRow(pos Vector2, pent [5]Vector2) map[int]bool {
 			x := pos.X + p.X
 			y := pos.Y + p.Y
 			ix := y*10 + x
-
-			if ix+12 == i {
-				row[i] = true
+			row[i] = ix+12 == i
+			if row[i] {
 				break
 			}
 		}
@@ -204,6 +203,7 @@ func ECCanPlacePentamino(board []BoardCell, p [5]Vector2, pos Vector2) ([5]Board
 			return result, errors.New("Pos not in board")
 		}
 	}
+	// Validate no closed in cells
 	if !ECValidateBoard(board, result) {
 		return result, errors.New("Invalid Pos in board")
 	}
