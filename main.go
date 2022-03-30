@@ -40,7 +40,7 @@ func main() {
 	failed := 0
 	success := 0
 	duplicate := 0
-	result := [][]int{}
+	result := []ECMessage{}
 	fmt.Printf("SolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
 
 	for message := range c {
@@ -54,7 +54,7 @@ func main() {
 		sort.Ints(message.Rows)
 		isDuplicate := false
 		for _, found := range result {
-			if compareResultArr(found, message.Rows) {
+			if compareResultArr(found.Rows, message.Rows) {
 				isDuplicate = true
 				break
 			}
@@ -63,7 +63,7 @@ func main() {
 			duplicate++
 			duplicateCount[message.Id] += 1
 		} else {
-			result = append(result, message.Rows)
+			result = append(result, message)
 			successCount[message.Id] += 1
 			success++
 		}
@@ -71,10 +71,10 @@ func main() {
 		fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
 	}
 	fmt.Println()
-	fmt.Printf("Number of solutions found: %v\n", success)
+	fmt.Printf("Number of solutions found: %v\n", len(result))
 }
 
-func printSeparateGoRoutines(successCount []int, duplicateCount []int, failedCount []int) {
+func printSeparateGoRoutines(successCount [7]int, duplicateCount [7]int, failedCount [7]int) {
 	str := fmt.Sprintf("S: ")
 	for _, val := range successCount {
 		str += fmt.Sprintf("c: %v|", val)
@@ -153,7 +153,7 @@ func ecStart(emMatrix ECMatrix, chosenRows []int, c chan<- ECMessage, goRoutineI
 				}
 			}
 			successRows := []int{}
-			copy(successRows, chosenRows)
+			successRows = append(successRows, chosenRows...)
 			successRows = append(successRows, rowI)
 			c <- ECMessage{goRoutineId, successRows}
 			// success

@@ -111,6 +111,58 @@ func getMatrixRow(pos Vector2, pent [5]Vector2) map[int]bool {
 	return row
 }
 
+// Print the succesful rows of a matrix
+func PrintSolution(matrix ECMatrix, rows []int) {
+	board := [6][10]string{}
+	for _, ri := range rows {
+		row := matrix.Matrix[ri]
+		var pId string
+		for i := 0; i < 12; i++ {
+			if p, ok := row[i]; ok && p {
+				pId = GetPentaminoLetter(i)
+			}
+		}
+		for colIx, col := range row {
+			if col && colIx > 11 {
+				y := (colIx - 12) / 10
+				x := (colIx - 12) % 10
+				board[y][x] = pId
+			}
+		}
+	}
+	PrintBoard(board)
+}
+
+func GetPentaminoLetter(i int) string {
+	switch i {
+	case 0:
+		return "X"
+	case 1:
+		return "I"
+	case 2:
+		return "Z"
+	case 3:
+		return "V"
+	case 4:
+		return "T"
+	case 5:
+		return "W"
+	case 6:
+		return "U"
+	case 7:
+		return "L"
+	case 8:
+		return "N"
+	case 9:
+		return "Y"
+	case 10:
+		return "F"
+	case 11:
+		return "p"
+	}
+	return "."
+}
+
 func SelectPos(board []BoardCell) []Vector2 {
 	res := make([]Vector2, len(board))
 	for _, p := range board {
