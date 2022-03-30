@@ -12,7 +12,7 @@ func main() {
 	c := make(chan ECMessage)
 	wg := new(sync.WaitGroup)
 	pentaminos := GeneratePentaminoes()
-
+	RemoveVRotations(pentaminos)
 	board := GetBoard6x10()
 	ecMatrix := ProduceExactCoverMatrix(pentaminos, board)
 	matrices := MatricesWithXAnchorPoints(ecMatrix, pentaminos[0].Permutations[0])
