@@ -12,7 +12,7 @@ func main() {
 	c := make(chan ECMessage)
 	wg := new(sync.WaitGroup)
 	pentaminos := GeneratePentaminoes()
-	RemoveVRotations(pentaminos)
+
 	board := GetBoard6x10()
 	ecMatrix := ProduceExactCoverMatrix(pentaminos, board)
 	matrices := MatricesWithXAnchorPoints(ecMatrix, pentaminos[0].Permutations[0])
@@ -47,27 +47,14 @@ func main() {
 		if len(message.Rows) == 0 {
 			failed++
 			failedCount[message.Id] += 1
-			str := fmt.Sprintf("S: ")
-			for _, val := range successCount {
-				str += fmt.Sprintf("c: %v|", val)
-			}
-			str += fmt.Sprintf("D: ")
-			for _, val := range duplicateCount {
-				str += fmt.Sprintf("c: %v|", val)
-			}
-			str += fmt.Sprintf("F: ")
-			for _, val := range failedCount {
-				str += fmt.Sprintf("c: %v|", val)
-			}
-			fmt.Printf("\r %v", str)
-			// fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
+			// printSeparateGoRoutines(successCount, duplicateCount, failedCount)
+			fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
 			continue
 		}
 		sort.Ints(message.Rows)
 		isDuplicate := false
 		for _, found := range result {
 			if compareResultArr(found, message.Rows) {
-				//duplicate
 				isDuplicate = true
 				break
 			}
@@ -80,23 +67,27 @@ func main() {
 			successCount[message.Id] += 1
 			success++
 		}
-		str := fmt.Sprintf("S: ")
-		for _, val := range successCount {
-			str += fmt.Sprintf("c: %v|", val)
-		}
-		str += fmt.Sprintf("D: ")
-		for _, val := range duplicateCount {
-			str += fmt.Sprintf("c: %v|", val)
-		}
-		str += fmt.Sprintf("F: ")
-		for _, val := range failedCount {
-			str += fmt.Sprintf("c: %v|", val)
-		}
-		fmt.Printf("\r %v", str)
-		// fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
+		// printSeparateGoRoutines(successCount, duplicateCount, failedCount)
+		fmt.Printf("\rSolutionsFound: %v. Duplicates Found: %v, Failed attempts: %v.", success, duplicate, failed)
 	}
 	fmt.Println()
 	fmt.Printf("Number of solutions found: %v\n", success)
+}
+
+func printSeparateGoRoutines(successCount []int, duplicateCount []int, failedCount []int) {
+	str := fmt.Sprintf("S: ")
+	for _, val := range successCount {
+		str += fmt.Sprintf("c: %v|", val)
+	}
+	str += fmt.Sprintf("D: ")
+	for _, val := range duplicateCount {
+		str += fmt.Sprintf("c: %v|", val)
+	}
+	str += fmt.Sprintf("F: ")
+	for _, val := range failedCount {
+		str += fmt.Sprintf("c: %v|", val)
+	}
+	fmt.Printf("\r %v", str)
 }
 
 func compareResultArr(first, second []int) bool {

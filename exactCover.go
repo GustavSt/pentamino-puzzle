@@ -2,6 +2,10 @@ package main
 
 import "errors"
 
+/*
+Generate a Exact cover matrix with 72 columns where first 12 represent a specific Pentamino
+and the last 60 the specific positions on the Board.
+*/
 func ProduceExactCoverMatrix(pentaminos []Pentamino, board []BoardCell) ECMatrix {
 	emMatrix := ECMatrix{
 		make(map[int]int),
@@ -52,6 +56,8 @@ func ProduceExactCoverMatrix(pentaminos []Pentamino, board []BoardCell) ECMatrix
 	return emMatrix
 }
 
+// Produce matrices with X piece in specific positions.
+// Other positions for X will result in mirrored solutions
 func MatricesWithXAnchorPoints(matrix ECMatrix, p [5]Vector2) []ECMatrix {
 	anchorPoints := GetXAncorPoints()
 	result := []ECMatrix{}
@@ -139,6 +145,7 @@ func CopyMatrix(matrix ECMatrix) ECMatrix {
 	return newMatrix
 }
 
+// Finds if there are sections of the board where no piece could fit
 func ECValidateBoard(board []BoardCell, p [5]BoardCell) bool {
 	checked := make([]Vector2, 0)
 	for _, cell := range board {

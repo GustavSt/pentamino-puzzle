@@ -94,6 +94,7 @@ func PrintBoardString(board string) {
 	fmt.Println()
 }
 
+// Finds if there are sections of the board where no piece could fit
 func ValidateBoard(board [6][10]string) bool {
 	// PrintBoard(board)
 	checked := make([]Vector2, 0)
@@ -147,6 +148,7 @@ func contains(s []Vector2, v Vector2) bool {
 	return false
 }
 
+// Positions to Place X to reduce number of attempts
 func GetXAncorPoints() []Vector2 {
 	return []Vector2{
 		{1, 1},
@@ -202,6 +204,7 @@ func GetBoard() [6][10]string {
 	}
 }
 
+// 12 pentominos with and all rotations/mirrored versions
 func GeneratePentaminoes() []Pentamino {
 	xPermutations := [][5]Vector2{
 		{{0, 0}, {1, 0}, {2, 0}, {1, 1}, {1, -1}},
@@ -323,6 +326,7 @@ func GeneratePentaminoes() []Pentamino {
 	return []Pentamino{xPentamino, iPentamino, zPentamino, vPentamino, tPentamino, wPentamino, uPentamino, lPentamino, nPentamino, yPentamino, fPentamino, pPentamino}
 }
 
+// V rotations are not needed in 6x10 board
 func RemoveVRotations(pentaminos []Pentamino) {
 	var index int
 	for i, p := range pentaminos {
